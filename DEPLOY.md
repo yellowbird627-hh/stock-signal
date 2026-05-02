@@ -1,105 +1,73 @@
-# 배포 가이드 (Vercel + Railway)
+# 배포 가이드 (Railway + Vercel)
 
-## 1. 백엔드 — Railway 배포
+## 현재 배포 상태
 
-### 1-1. Railway 계정 및 프로젝트 생성
-1. railway.app 접속 → 회원가입 또는 로그인
-2. "New Project" → "Deploy from GitHub repo" 선택
-3. GitHub에 이 레포 push 후 연결, 또는 "Empty Project" → Railway CLI 사용
+| 구성 | URL |
+|------|-----|
+| 백엔드 | `https://stock-signal-production.up.railway.app` |
+| 프론트엔드 | `https://stock-signal-chi.vercel.app` |
 
-### 1-2. 환경변수 설정 (Railway 대시보드 Variables 탭)
+---
+
+## 백엔드 — Railway
+
+### 환경변수 (Variables 탭)
 
 | 변수명 | 값 |
 |--------|-----|
-| `ANTHROPIC_API_KEY` | Anthropic API 키 (console.anthropic.com) |
-| `ACCESS_PASSWORD` | 두 사람이 공유할 비밀번호 (예: stock2024!) |
-| `FRONTEND_ORIGIN` | 나중에 Vercel 배포 후 URL 입력 |
+| `GEMINI_API_KEY` | Google AI Studio에서 발급한 키 |
+| `FRONTEND_ORIGIN` | `*` |
 
-### 1-3. 배포
-```bash
-# Railway CLI 방법 (backend 폴더에서)
-cd backend
-railway login
-railway up
-```
+> `ACCESS_PASSWORD`는 설정하지 말 것 — 설정 시 API 요청 전부 차단됨  
+> `PORT`는 Railway가 자동 주입하므로 설정 불필요
 
-배포 완료 후 Railway가 제공하는 URL을 복사해 둡니다.
-(예: `https://stock-signal-backend-xxxxx.railway.app`)
+### 설정 (Settings 탭)
+
+- Root Directory: `backend`
+- Start Command: `gunicorn app:app --bind 0.0.0.0:$PORT`
 
 ---
 
-## 2. 프론트엔드 — Vercel 배포
+## 프론트엔드 — Vercel
 
-### 2-1. Vercel 계정 및 프로젝트 생성
-1. vercel.com 접속 → 로그인
-2. "New Project" → GitHub 레포 연결
-3. **Root Directory**: `frontend` 로 설정 (중요!)
-
-### 2-2. 환경변수 설정 (Vercel 대시보드 Settings → Environment Variables)
+### 환경변수
 
 | 변수명 | 값 |
 |--------|-----|
-| `NEXT_PUBLIC_BACKEND_URL` | Railway에서 받은 백엔드 URL |
-| `NEXT_PUBLIC_ACCESS_PASSWORD` | 백엔드와 동일한 비밀번호 |
+| `NEXT_PUBLIC_BACKEND_URL` | Railway 백엔드 URL |
 
-### 2-3. 배포
-Vercel이 자동으로 빌드·배포합니다.
-배포 완료 후 Vercel URL을 복사합니다. (예: `https://stock-signal.vercel.app`)
+### 설정
 
----
-
-## 3. CORS 업데이트
-
-Railway 환경변수 `FRONTEND_ORIGIN`에 Vercel URL을 입력하고 재배포:
-```
-FRONTEND_ORIGIN=https://stock-signal.vercel.app
-```
+- Root Directory: `frontend`
+- Deployment Protection: **비활성화** (활성화 시 외부 접근 차단)
 
 ---
 
-## 4. 공유 방법
+## 코드 변경 후 재배포
 
-상대방에게 이것만 알려주면 됩니다:
-- **URL**: `https://stock-signal.vercel.app`
-- **비밀번호**: 설정한 비밀번호
-
----
-
-## 5. 종목 추가 방법
-
-`backend/config/stocks.json` 파일에 종목 추가 후 Railway 재배포:
-
-```json
-{
-  "version": "1.0",
-  "stocks": [
-    {"ticker": "005930", "market": "KRX", "name": "삼성전자", "enabled": true},
-    {"ticker": "000660", "market": "KRX", "name": "SK하이닉스", "enabled": true},
-    {"ticker": "035420", "market": "KRX", "name": "NAVER", "enabled": true},
-    {"ticker": "AAPL",   "market": "US",  "name": "Apple",    "enabled": true},
-    {"ticker": "NVDA",   "market": "US",  "name": "NVIDIA",   "enabled": true}
-  ]
-}
-```
-
----
-
-## 6. 로컬 개발 실행
-
-### 백엔드
 ```bash
-cd backend
-cp .env.example .env
-# .env 파일에 ANTHROPIC_API_KEY 입력
-python3 app.py
-# → http://localhost:5000
+git add <변경된 파일>
+git commit -m "변경 내용 설명"
+git push origin main
 ```
 
-### 프론트엔드
+push 후 Railway·Vercel이 자동으로 재배포합니다.
+
+---
+
+## 로컬 실행
+
 ```bash
-cd frontend
-# .env.local 파일이 이미 localhost:5000 으로 설정되어 있음
-npm install
-npm run dev
-# → http://localhost:3000
+# 백엔드
+cd backend && python app.py   # → http://localhost:5100
+
+# 프론트엔드
+cd frontend && npm run dev -- -p 3001   # → http://localhost:3001
 ```
+
+---
+
+## 종목 추가/삭제
+
+대시보드 UI의 **종목 관리** 버튼 사용 (코드 수정 불필요).  
+또는 `backend/config/stocks.json` 직접 편집 후 push.
