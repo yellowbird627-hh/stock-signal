@@ -38,7 +38,6 @@ function SignalBadge({ item }: { item: PortfolioItem }) {
     return <span className="text-xs text-gray-300 font-medium">중립</span>
   }
 
-  const isBuy = buyRank >= sellRank ? item.buy >= item.sell : false
   const dominant = buyRank >= sellRank ? { label: item.buy_label, score: item.buy, side: "buy" } : { label: item.sell_label, score: item.sell, side: "sell" }
 
   const isStrong = dominant.label === "strong" || dominant.label === "very_strong"

@@ -11,6 +11,9 @@ import json
 import logging
 import os
 from datetime import datetime, timedelta
+
+from pykrx import stock as krx_stock
+
 from . import cache as _cache
 
 logger = logging.getLogger(__name__)
@@ -49,12 +52,11 @@ def get_investor_flow_krx(ticker: str) -> dict:
         return cached
 
     try:
-        from pykrx import stock
         t = ticker.zfill(6)
         end = datetime.today()
         start = end - timedelta(days=20)
 
-        df = stock.get_market_trading_value_by_date(
+        df = krx_stock.get_market_trading_value_by_date(
             start.strftime("%Y%m%d"),
             end.strftime("%Y%m%d"),
             t,
@@ -105,12 +107,11 @@ def get_short_ratio_krx(ticker: str) -> dict:
         return cached
 
     try:
-        from pykrx import stock
         t = ticker.zfill(6)
         end = datetime.today()
         start = end - timedelta(days=14)
 
-        df = stock.get_shorting_volume_by_date(
+        df = krx_stock.get_shorting_volume_by_date(
             start.strftime("%Y%m%d"),
             end.strftime("%Y%m%d"),
             t,
