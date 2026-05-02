@@ -9,6 +9,7 @@ import SellScoreCard from "@/components/panels/SellScoreCard"
 import NewsSentimentPanel from "@/components/panels/NewsSentimentPanel"
 import AIRecommendation from "@/components/panels/AIRecommendation"
 import IndicatorGuide from "@/components/panels/IndicatorGuide"
+import BacktestPanel from "@/components/panels/BacktestPanel"
 import TradingSuitability from "@/components/ui/TradingSuitability"
 
 // ── 개별 종목 뷰 ──────────────────────────────────────────────────────────────
@@ -119,10 +120,11 @@ export default function Page() {
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-5">
         <div className="flex gap-1 bg-white rounded-xl border border-gray-200 p-1 flex-wrap">
           {([
-            { key: "portfolio",       label: "전체 포트폴리오" },
-            { key: "recommendation",  label: "🤖 AI 추천" },
-            { key: "detail",          label: "개별 종목 분석" },
-            { key: "guide",           label: "지표 가이드" },
+            { key: "portfolio",      label: "전체 포트폴리오" },
+            { key: "recommendation", label: "🤖 AI 추천" },
+            { key: "backtest",       label: "📊 신호 검증" },
+            { key: "detail",         label: "개별 종목 분석" },
+            { key: "guide",          label: "지표 가이드" },
           ] as const).map(({ key, label }) => (
             <button
               key={key}
@@ -140,6 +142,7 @@ export default function Page() {
 
         {activeTab === "portfolio" && <PortfolioDashboard />}
         {activeTab === "recommendation" && <AIRecommendation />}
+        {activeTab === "backtest" && <BacktestPanel />}
         {activeTab === "guide" && <IndicatorGuide />}
         {activeTab === "detail" && (
           <>

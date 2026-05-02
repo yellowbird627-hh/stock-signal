@@ -11,6 +11,7 @@ CACHE_TTL = {
     "short_ratio": 1800,    # 30분
     "news_headlines": 3600, # 60분
     "news_sentiment": 7200, # 120분
+    "backtest": 3600,       # 60분
 }
 
 

@@ -10,7 +10,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from services import cache as _cache
-from services import investor_flow, market_data, news_scraper, recommendation as recommendation_svc, scorer, sentiment, technical
+from services import backtest as backtest_svc, investor_flow, market_data, news_scraper, recommendation as recommendation_svc, scorer, sentiment, technical
 from services.prefetch import start_scheduler, stop_scheduler
 
 logging.basicConfig(level=logging.INFO,
@@ -278,6 +278,28 @@ def get_recommendation():
     result = recommendation_svc.get_recommendation(portfolio_data)
     result["generated_at"] = datetime.now(timezone.utc).isoformat()
     return jsonify(result)
+
+
+@app.route("/api/backtest")
+def run_backtest():
+    ticker    = request.args.get("ticker", "").strip().upper()
+    market    = request.args.get("market", "KRX").strip().upper()
+    threshold = int(request.args.get("threshold", 25))
+    hold_days = int(request.args.get("hold_days", 5))
+
+    if not ticker:
+        return jsonify({"error": "ticker 파라미터 필요"}), 400
+    if market not in ("KRX", "US"):
+        return jsonify({"error": "market은 KRX 또는 US"}), 400
+    threshold = max(20, min(90, threshold))
+    hold_days = max(1, min(20, hold_days))
+
+    try:
+        result = backtest_svc.run_backtest(ticker, market, threshold, hold_days)
+        return jsonify(result)
+    except Exception as e:
+        logger.error("backtest 오류 (%s %s): %s", market, ticker, e, exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/refresh-cache", methods=["POST"])
