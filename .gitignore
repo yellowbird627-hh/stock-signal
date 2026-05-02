@@ -1,0 +1,20 @@
+# 환경변수 (절대 올리면 안 됨)
+backend/.env
+frontend/.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Node
+frontend/node_modules/
+frontend/.next/
+
+# 캐시
+backend/data/flow_cache/
+
+# macOS
+.DS_Store

@@ -1,0 +1,14 @@
+flask
+flask-cors
+python-dotenv
+finance-datareader
+pykrx
+yfinance
+google-genai
+requests
+beautifulsoup4
+feedparser
+pandas
+numpy
+apscheduler
+gunicorn

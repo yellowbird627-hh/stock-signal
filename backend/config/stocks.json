@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "stocks": [
+    {
+      "ticker": "005930",
+      "market": "KRX",
+      "name": "삼성전자",
+      "sector": "반도체",
+      "enabled": true
+    },
+    {
+      "ticker": "000660",
+      "market": "KRX",
+      "name": "SK하이닉스",
+      "enabled": true
+    }
+  ]
+}
