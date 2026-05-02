@@ -2,23 +2,14 @@ import type { PortfolioResponse, Recommendation, SignalResult, StockConfig } fro
 
 const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
 
-function getPassword(): string {
-  if (typeof window !== "undefined") {
-    return sessionStorage.getItem("access_token") || ""
-  }
-  return ""
-}
-
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "X-Access-Token": getPassword(),
       ...(options?.headers || {}),
     },
   })
-  if (res.status === 401) throw new Error("unauthorized")
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error || `HTTP ${res.status}`)

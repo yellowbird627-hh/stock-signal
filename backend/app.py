@@ -20,20 +20,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app, origins=os.environ.get("FRONTEND_ORIGIN", "*"))
 
-ACCESS_TOKEN = os.environ.get("ACCESS_PASSWORD", "")
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config", "stocks.json")
-
-
-# ── 인증 미들웨어 ─────────────────────────────────────────────────────────────
-
-@app.before_request
-def check_auth():
-    if request.path == "/api/health":
-        return  # 헬스체크는 인증 불필요
-    if request.path.startswith("/api/"):
-        token = request.headers.get("X-Access-Token", "")
-        if ACCESS_TOKEN and token != ACCESS_TOKEN:
-            return jsonify({"error": "unauthorized"}), 401
 
 
 # ── 헬퍼 ─────────────────────────────────────────────────────────────────────

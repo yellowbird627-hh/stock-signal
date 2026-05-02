@@ -8,10 +8,6 @@ import type { Market, PortfolioItem, SignalResult, StockConfig } from "@/types"
 type Tab = "portfolio" | "recommendation" | "detail" | "guide"
 
 interface SignalStore {
-  // 인증
-  isAuthenticated: boolean
-  authenticate: (password: string) => boolean
-
   // 탭
   activeTab: Tab
   setActiveTab: (tab: Tab) => void
@@ -42,20 +38,6 @@ interface SignalStore {
 export const useSignalStore = create<SignalStore>()(
   persist(
     (set, get) => ({
-      // 인증
-      isAuthenticated: false,
-      authenticate: (password: string) => {
-        const expected = process.env.NEXT_PUBLIC_ACCESS_PASSWORD || ""
-        if (!expected || password === expected) {
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem("access_token", password)
-          }
-          set({ isAuthenticated: true })
-          return true
-        }
-        return false
-      },
-
       // 탭
       activeTab: "portfolio",
       setActiveTab: (tab) => set({ activeTab: tab }),
@@ -76,7 +58,6 @@ export const useSignalStore = create<SignalStore>()(
           })
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "오류 발생"
-          if (msg === "unauthorized") set({ isAuthenticated: false })
           set({ portfolioError: msg, portfolioLoading: false })
         }
       },
@@ -94,7 +75,6 @@ export const useSignalStore = create<SignalStore>()(
           set({ result: data, loading: false })
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "오류 발생"
-          if (msg === "unauthorized") set({ isAuthenticated: false })
           set({ error: msg, loading: false })
         }
       },
@@ -121,7 +101,6 @@ export const useSignalStore = create<SignalStore>()(
       removeStock: async (ticker, market) => {
         await api.removeStock(ticker, market)
         await get().fetchStockList()
-        // 포트폴리오 목록에서도 즉시 제거
         set((s) => ({
           portfolio: s.portfolio.filter(
             (p) => !(p.ticker === ticker && p.market === market)
@@ -132,7 +111,6 @@ export const useSignalStore = create<SignalStore>()(
     {
       name: "signal-store",
       partialize: (state) => ({
-        isAuthenticated: state.isAuthenticated,
         activeTab: state.activeTab,
       }),
     }

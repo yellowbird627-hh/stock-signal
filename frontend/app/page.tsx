@@ -11,51 +11,6 @@ import AIRecommendation from "@/components/panels/AIRecommendation"
 import IndicatorGuide from "@/components/panels/IndicatorGuide"
 import TradingSuitability from "@/components/ui/TradingSuitability"
 
-// ── 비밀번호 게이트 ────────────────────────────────────────────────────────────
-
-function PasswordGate() {
-  const { authenticate } = useSignalStore()
-  const [input, setInput] = useState("")
-  const [error, setError] = useState(false)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const ok = authenticate(input)
-    if (!ok) setError(true)
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="bg-white rounded-2xl border border-gray-200 p-8 w-full max-w-sm shadow-sm">
-        <div className="text-center mb-6">
-          <div className="text-4xl mb-2">📈</div>
-          <h1 className="text-xl font-bold text-gray-800">주식 매매 신호</h1>
-          <p className="text-sm text-gray-400 mt-1">비밀번호를 입력하세요</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="password"
-            value={input}
-            onChange={(e) => { setInput(e.target.value); setError(false) }}
-            placeholder="비밀번호"
-            className={`w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              error ? "border-red-400" : "border-gray-300"
-            }`}
-            autoFocus
-          />
-          {error && <p className="text-xs text-red-500">비밀번호가 틀렸습니다.</p>}
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-blue-700 transition"
-          >
-            입장
-          </button>
-        </form>
-      </div>
-    </div>
-  )
-}
-
 // ── 개별 종목 뷰 ──────────────────────────────────────────────────────────────
 
 function DetailView() {
@@ -145,13 +100,12 @@ function DetailView() {
 // ── 메인 페이지 ───────────────────────────────────────────────────────────────
 
 export default function Page() {
-  const { isAuthenticated, activeTab, setActiveTab } = useSignalStore()
+  const { activeTab, setActiveTab } = useSignalStore()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
   if (!mounted) return null
-  if (!isAuthenticated) return <PasswordGate />
 
   return (
     <div className="min-h-screen bg-slate-50">
