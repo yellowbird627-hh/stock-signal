@@ -100,6 +100,35 @@ export default function AIRecommendation() {
                         <span className="text-xs font-semibold text-emerald-700 shrink-0 mt-0.5">📋 근거</span>
                         <span className="text-xs text-gray-700 leading-relaxed">{item.reason}</span>
                       </div>
+                      {(item.target1 != null || item.target2 != null || item.stop_loss != null) && (
+                        <div className="border-t border-emerald-100 pt-2 space-y-1">
+                          {item.target1 != null && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-emerald-700 font-medium">🎯 1차 목표가</span>
+                              <span className="font-mono font-semibold text-emerald-800">
+                                {item.target1.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {item.target2 != null && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-emerald-700 font-medium">🎯 2차 목표가</span>
+                              <span className="font-mono font-semibold text-emerald-800">
+                                {item.target2.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {item.stop_loss != null && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-red-600 font-medium">🛑 손절선</span>
+                              <span className="font-mono font-semibold text-red-600">
+                                {item.stop_loss.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          <p className="text-xs text-gray-400 pt-0.5">※ 기술적 참고치이며 투자 보장이 아닙니다</p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

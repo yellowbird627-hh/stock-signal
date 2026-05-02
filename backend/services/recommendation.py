@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", ""))
 
 SYSTEM_PROMPT = """당신은 한국 주식 단타 전문 트레이딩 어드바이저입니다.
-포트폴리오 종목별 기술적 신호 데이터를 분석해 매수/매도 추천을 제공합니다.
+포트폴리오 종목별 기술적 신호 데이터와 가격 레벨을 분석해 매수/매도 추천을 제공합니다.
 
 반드시 다음 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 {
@@ -23,7 +23,10 @@ SYSTEM_PROMPT = """당신은 한국 주식 단타 전문 트레이딩 어드바�
       "ticker": "종목코드",
       "name": "종목명",
       "timing": "진입 타이밍 (구체적으로, 예: 즉시 진입 가능 / 오전 30분 양봉 확인 후 / 눌림목 대기)",
-      "reason": "2-3문장 근거 — 활성화된 지표 수치 포함"
+      "reason": "2-3문장 근거 — 활성화된 지표 수치 포함",
+      "target1": 67500,
+      "target2": 71200,
+      "stop_loss": 62000
     }
   ],
   "sell": [
@@ -43,7 +46,12 @@ SYSTEM_PROMPT = """당신은 한국 주식 단타 전문 트레이딩 어드바�
 - 신호 없으면 buy/sell 빈 배열 반환
 - 타이밍은 신호 조합에 따라 구체적으로 작성
 - 근거에는 반드시 실제 수치 포함 (예: RSI 28, 기관 3일 연속 순매수)
-- 장외 시간 데이터 사용 시 "마지막 거래일 기준" 문구 포함"""
+- 장외 시간 데이터 사용 시 "마지막 거래일 기준" 문구 포함
+- target1: 1차 목표가 — MA20 또는 볼린저 중단(BB중단) 기준, 정수
+- target2: 2차 목표가 — 30일 고점 또는 볼린저 상단(BB상단) 기준, 정수
+- stop_loss: 손절선 — 현재가에서 ATR×1.5 하단 또는 MA60 중 높은 값, 정수
+- 목표가는 반드시 현재가 기준 ±30% 이내 현실적 수치로 제시
+- target1/target2/stop_loss는 매수 추천에만 포함 (매도 추천에는 불필요)"""
 
 
 def get_recommendation(portfolio_stocks: list[dict]) -> dict:
@@ -82,12 +90,23 @@ def _call_gemini(stocks: list[dict]) -> dict:
             if v.get("score", 0) > 0
         ) or "없음"
         limitation = s.get("data_limitation", "")
+        pl = s.get("price_levels", {})
+        price_info = ""
+        if s.get("price") and pl:
+            ma60 = pl.get("ma60") or "N/A"
+            price_info = (
+                f" | 현재가:{s['price']}"
+                f" MA20:{pl.get('ma20','?')} MA60:{ma60}"
+                f" BB중단:{pl.get('bb_mid','?')} BB상단:{pl.get('bb_upper','?')}"
+                f" 30일고점:{pl.get('high_30d','?')} ATR:{pl.get('atr','?')}"
+            )
         lines.append(
             f"- {s['name']} ({s['ticker']}/{s['market']}): "
             f"매수 {s.get('buy', 0)}점({s.get('buy_label', 'none')}), "
             f"매도 {s.get('sell', 0)}점({s.get('sell_label', 'none')}) "
             f"| 매수신호: {buy_signals} "
             f"| 매도신호: {sell_signals}"
+            + price_info
             + (f" [{limitation}]" if limitation else "")
         )
 

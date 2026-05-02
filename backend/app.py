@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 
@@ -58,7 +59,10 @@ def _analyze_stock(ticker: str, market: str) -> dict:
     # 6. 점수 계산
     scores = scorer.compute_scores(flow, tech, sentiment_score, market)
 
-    # 7. 데이터 제한 안내
+    # 7. PER/PBR
+    fundamentals = market_data.get_fundamentals(ticker, market)
+
+    # 8. 데이터 제한 안내
     limitations = []
     if flow.get("data_error"):
         limitations.append(f"기관/외국인 데이터: {flow['data_error']}")
@@ -74,6 +78,16 @@ def _analyze_stock(ticker: str, market: str) -> dict:
         "trading_suitability": tech["atr"]["suitability"],
         "atr_pct": tech["atr"]["atr_pct"],
         "data_timestamp": datetime.now(timezone.utc).isoformat(),
+        "per": fundamentals.get("per"),
+        "pbr": fundamentals.get("pbr"),
+        "price_levels": {
+            "ma20":     tech["ma_alignment"]["ma20"],
+            "ma60":     tech["ma_alignment"]["ma60"],
+            "bb_mid":   tech["bollinger"]["mid"],
+            "bb_upper": tech["bollinger"]["upper"],
+            "high_30d": tech["price_position"]["high_30d"],
+            "atr":      round(tech["atr"]["atr"], 2),
+        },
         "buy": scores["buy"],
         "sell": scores["sell"],
         "news": [
@@ -137,13 +151,12 @@ def signal():
 def portfolio():
     stocks = [s for s in _load_stocks() if s.get("enabled", True)]
 
-    results = []
-    for stock in stocks:
+    def _analyze_one(stock):
         ticker = stock["ticker"]
         mkt = stock["market"]
         try:
             data = _analyze_stock(ticker, mkt)
-            results.append({
+            return {
                 "ticker": ticker,
                 "market": mkt,
                 "name": stock.get("name", ticker),
@@ -156,18 +169,20 @@ def portfolio():
                 "change_pct": data["change_pct"],
                 "suitability": data["trading_suitability"],
                 "atr_pct": data["atr_pct"],
-            })
+            }
         except Exception as e:
             logger.warning("portfolio 분석 실패 (%s): %s", ticker, e)
-            results.append({
+            return {
                 "ticker": ticker, "market": mkt,
                 "name": stock.get("name", ticker),
                 "buy": 0, "sell": 0, "price": 0, "change_pct": 0,
                 "suitability": "low", "atr_pct": 0,
                 "error": str(e),
-            })
+            }
 
-    # (매수 - 매도) 내림차순 정렬
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        results = list(executor.map(_analyze_one, stocks))
+
     results.sort(key=lambda x: x["buy"] - x["sell"], reverse=True)
 
     return jsonify({
@@ -250,9 +265,8 @@ def remove_stock(market: str, ticker: str):
 @app.route("/api/recommendation")
 def get_recommendation():
     stocks_cfg = [s for s in _load_stocks() if s.get("enabled", True)]
-    portfolio_data = []
 
-    for stock in stocks_cfg:
+    def _build_rec_item(stock):
         ticker = stock["ticker"]
         mkt = stock["market"]
         try:
@@ -260,7 +274,7 @@ def get_recommendation():
             buy_active = {k: v for k, v in data["buy"]["breakdown"].items() if v["score"] > 0}
             sell_active = {k: v for k, v in data["sell"]["breakdown"].items() if v["score"] > 0}
             limitations = data.get("data_limitations", [])
-            portfolio_data.append({
+            return {
                 "ticker": ticker,
                 "market": mkt,
                 "name": stock.get("name", ticker),
@@ -271,9 +285,15 @@ def get_recommendation():
                 "buy_active": buy_active,
                 "sell_active": sell_active,
                 "data_limitation": limitations[0] if limitations else "",
-            })
+                "price": data["price"],
+                "price_levels": data.get("price_levels", {}),
+            }
         except Exception as e:
             logger.warning("recommendation 분석 실패 (%s): %s", ticker, e)
+            return None
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        portfolio_data = [r for r in executor.map(_build_rec_item, stocks_cfg) if r is not None]
 
     result = recommendation_svc.get_recommendation(portfolio_data)
     result["generated_at"] = datetime.now(timezone.utc).isoformat()

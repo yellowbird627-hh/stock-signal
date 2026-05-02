@@ -68,6 +68,16 @@ function DetailView() {
                 {changeSign}{result.change_pct.toFixed(2)}%
               </span>
               <TradingSuitability suitability={result.trading_suitability} atrPct={result.atr_pct} />
+              {result.per != null && (
+                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-mono">
+                  PER {result.per}
+                </span>
+              )}
+              {result.pbr != null && (
+                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-mono">
+                  PBR {result.pbr}
+                </span>
+              )}
             </div>
           </div>
           <p className="text-xs text-gray-400">

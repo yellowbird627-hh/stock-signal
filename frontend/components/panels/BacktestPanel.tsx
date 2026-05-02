@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import type { Market } from "@/types"
+import { useSignalStore } from "@/store/useSignalStore"
 
 const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5100"
 
@@ -78,6 +79,37 @@ export default function BacktestPanel() {
   const [loading,   setLoading]   = useState(false)
   const [result,    setResult]    = useState<BacktestResult | null>(null)
   const [error,     setError]     = useState<string | null>(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const { stockList, fetchStockList } = useSignalStore()
+
+  useEffect(() => {
+    if (stockList.length === 0) fetchStockList()
+  }, [])
+
+  // 드롭다운 바깥 클릭 시 닫기
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
+  const selectStock = (t: string, m: Market) => {
+    setTicker(t)
+    setMarket(m)
+    setDropdownOpen(false)
+  }
+
+  const filtered = stockList.filter(
+    (s) =>
+      s.ticker.includes(ticker.toUpperCase()) ||
+      s.name.toLowerCase().includes(ticker.toLowerCase())
+  )
 
   const run = async () => {
     if (!ticker.trim()) return
@@ -114,15 +146,41 @@ export default function BacktestPanel() {
         </p>
 
         <div className="flex flex-wrap gap-3 items-end">
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">티커</label>
-            <input
-              type="text"
-              value={ticker}
-              onChange={(e) => setTicker(e.target.value.toUpperCase())}
-              placeholder="005930 / NVDA"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="relative" ref={dropdownRef}>
+            <label className="text-xs text-gray-500 block mb-1">종목</label>
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={ticker}
+                onChange={(e) => { setTicker(e.target.value.toUpperCase()); setDropdownOpen(true) }}
+                onFocus={() => setDropdownOpen(true)}
+                placeholder="005930 / NVDA"
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={() => setDropdownOpen((v) => !v)}
+                className="border border-gray-300 rounded-lg px-2 py-2 text-gray-500 hover:bg-gray-50 text-xs"
+                title="등록 종목 선택"
+              >
+                ▾
+              </button>
+            </div>
+            {dropdownOpen && filtered.length > 0 && (
+              <div className="absolute z-20 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                {filtered.map((s) => (
+                  <button
+                    key={`${s.market}:${s.ticker}`}
+                    type="button"
+                    onClick={() => selectStock(s.ticker, s.market as Market)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center justify-between gap-2"
+                  >
+                    <span className="font-medium text-gray-800 truncate">{s.name}</span>
+                    <span className="text-xs text-gray-400 shrink-0">{s.ticker} · {s.market}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>

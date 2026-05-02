@@ -40,6 +40,16 @@ export interface SignalResult {
   trading_suitability: Suitability
   atr_pct: number
   data_timestamp: string
+  per?: number | null
+  pbr?: number | null
+  price_levels?: {
+    ma20: number
+    ma60: number | null
+    bb_mid: number
+    bb_upper: number
+    high_30d: number
+    atr: number
+  }
   buy: SignalScore
   sell: SignalScore
   news: NewsItem[]
@@ -74,6 +84,9 @@ export interface RecommendationItem {
   name: string
   timing: string
   reason: string
+  target1?: number
+  target2?: number
+  stop_loss?: number
 }
 
 export interface Recommendation {

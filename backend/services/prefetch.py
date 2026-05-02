@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import urllib.request
 from typing import Optional
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -56,6 +57,15 @@ def _prefetch_market(market: str) -> None:
     logger.info("[prefetch] %s 완료", market)
 
 
+def _keepalive() -> None:
+    """Railway 컨테이너 슬립 방지 — 10분마다 자체 핑."""
+    try:
+        port = int(os.environ.get("PORT", 5000))
+        urllib.request.urlopen(f"http://localhost:{port}/api/health", timeout=5)
+    except Exception:
+        pass
+
+
 def start_scheduler() -> None:
     global _scheduler
     if _scheduler and _scheduler.running:
@@ -79,8 +89,17 @@ def start_scheduler() -> None:
         replace_existing=True,
     )
 
+    # Railway 슬립 방지: 10분마다 자체 핑
+    _scheduler.add_job(
+        _keepalive,
+        "interval",
+        minutes=10,
+        id="keepalive",
+        replace_existing=True,
+    )
+
     _scheduler.start()
-    logger.info("prefetch 스케줄러 시작 (KRX 08:55, US 21:25 KST)")
+    logger.info("prefetch 스케줄러 시작 (KRX 08:55, US 21:25 KST, keepalive 10분)")
 
 
 def stop_scheduler() -> None:

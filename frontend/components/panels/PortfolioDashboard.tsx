@@ -201,6 +201,8 @@ function StockRow({
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000 // 5분
+
 export default function PortfolioDashboard() {
   const {
     portfolio, portfolioLoading, portfolioError, portfolioTimestamp,
@@ -208,10 +210,25 @@ export default function PortfolioDashboard() {
   } = useSignalStore()
   const [sortKey, setSortKey] = useState<SortKey>("signal")
   const [showAdd, setShowAdd] = useState(false)
+  const [minutesAgo, setMinutesAgo] = useState(0)
 
+  // 최초 로드 + 5분 자동 갱신
   useEffect(() => {
-    if (portfolio.length === 0) fetchPortfolio()
+    fetchPortfolio()
+    const interval = setInterval(fetchPortfolio, REFRESH_INTERVAL_MS)
+    return () => clearInterval(interval)
   }, [])
+
+  // "X분 전 갱신" 카운터 (1분마다 업데이트)
+  useEffect(() => {
+    if (!portfolioTimestamp) return
+    const update = () => {
+      setMinutesAgo(Math.floor((Date.now() - new Date(portfolioTimestamp).getTime()) / 60000))
+    }
+    update()
+    const t = setInterval(update, 60000)
+    return () => clearInterval(t)
+  }, [portfolioTimestamp])
 
   const sorted = [...portfolio].sort((a, b) => {
     if (sortKey === "buy")       return b.buy - a.buy
@@ -253,8 +270,12 @@ export default function PortfolioDashboard() {
             )}
           </h2>
           {portfolioTimestamp && (
-            <p className="text-xs text-gray-400">
-              {new Date(portfolioTimestamp).toLocaleString("ko-KR")} 기준
+            <p className="text-xs text-gray-400 flex items-center gap-1.5">
+              {minutesAgo === 0 ? "방금 갱신됨" : `${minutesAgo}분 전 갱신`}
+              {portfolioLoading && portfolio.length > 0 && (
+                <span className="inline-block w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              )}
+              <span className="text-gray-300">· 5분마다 자동 갱신</span>
             </p>
           )}
         </div>

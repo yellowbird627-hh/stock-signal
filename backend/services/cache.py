@@ -12,6 +12,7 @@ CACHE_TTL = {
     "news_headlines": 3600, # 60분
     "news_sentiment": 7200, # 120분
     "backtest": 3600,       # 60분
+    "fundamentals": 3600,   # 60분
 }
 
 
