@@ -9,27 +9,10 @@ from . import cache as _cache
 logger = logging.getLogger(__name__)
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", ""))
 
-BATCH_SYSTEM_PROMPT = """당신은 주식 시장 뉴스 감성 분석 전문가입니다.
-여러 종목의 최근 뉴스 헤드라인을 분석해 각 종목의 주가에 미칠 영향을 평가합니다.
+BATCH_SYSTEM_PROMPT = """주식 뉴스 감성 분석기. JSON만 반환 (다른 텍스트 없이):
+{"종목명": {"sentiment_score": 0~1, "confidence": 0~1, "key_points": ["핵심1", "핵심2"], "reasoning": "한 문장"}}
 
-반드시 다음 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
-{
-  "종목명1": {
-    "sentiment_score": 0.0~1.0,
-    "confidence": 0.0~1.0,
-    "key_points": ["포인트1", "포인트2"],
-    "reasoning": "한 문장 근거"
-  },
-  "종목명2": { ... }
-}
-
-평가 기준:
-- 매출/영업이익 성장, 어닝 서프라이즈: 매우 긍정 (0.8~1.0)
-- 배당 증가, 자사주 매입, 신사업 수주: 긍정 (0.6~0.8)
-- 단순 시세/거래량: 중립 (0.5)
-- 실적 하락, 가이던스 하향: 부정 (0.2~0.4)
-- 어닝쇼크, 규제/소송/경영 리스크: 매우 부정 (0.0~0.2)
-- 뉴스 없음: 중립 (0.5)"""
+점수 기준: 실적성장/어닝서프라이즈→0.8~1.0 | 배당/신사업→0.6~0.8 | 시세/거래량→0.5 | 실적하락→0.2~0.4 | 규제/소송/리스크→0~0.2 | 뉴스없음→0.5"""
 
 
 def analyze_batch(stocks_news: dict[str, list[dict]]) -> dict[str, dict]:
@@ -74,8 +57,8 @@ def _call_gemini(batch: dict[str, list[dict]]) -> dict[str, dict]:
         if not news_items:
             user_content += "- 최근 뉴스 없음\n"
         else:
-            for item in news_items[:3]:
-                user_content += f"- [{item['published_at']}] {item['headline']}\n"
+            for item in news_items[:2]:
+                user_content += f"- {item['headline']}\n"
 
     try:
         response = client.models.generate_content(
