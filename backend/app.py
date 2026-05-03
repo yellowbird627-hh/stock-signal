@@ -21,7 +21,23 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app, origins=os.environ.get("FRONTEND_ORIGIN", "*"))
 
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config", "stocks.json")
+_DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config", "stocks.json")
+_VOLUME_CONFIG_PATH = os.path.join(os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", ""), "stocks.json")
+
+def _get_config_path() -> str:
+    mount = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", "")
+    if mount and os.path.isdir(mount):
+        path = os.path.join(mount, "stocks.json")
+        if not os.path.exists(path):
+            with open(_DEFAULT_CONFIG_PATH, encoding="utf-8") as f:
+                default_data = json.load(f)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(default_data, f, ensure_ascii=False, indent=2)
+            logger.info("Volume에 stocks.json 초기화 완료: %s", path)
+        return path
+    return _DEFAULT_CONFIG_PATH
+
+CONFIG_PATH = _get_config_path()
 
 
 # ── 헬퍼 ─────────────────────────────────────────────────────────────────────
