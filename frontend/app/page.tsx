@@ -10,6 +10,7 @@ import NewsSentimentPanel from "@/components/panels/NewsSentimentPanel"
 import AIRecommendation from "@/components/panels/AIRecommendation"
 import IndicatorGuide from "@/components/panels/IndicatorGuide"
 import BacktestPanel from "@/components/panels/BacktestPanel"
+import UsageGuide from "@/components/panels/UsageGuide"
 import TradingSuitability from "@/components/ui/TradingSuitability"
 
 // ── 개별 종목 뷰 ──────────────────────────────────────────────────────────────
@@ -135,6 +136,7 @@ export default function Page() {
             { key: "backtest",       label: "📊 신호 검증" },
             { key: "detail",         label: "개별 종목 분석" },
             { key: "guide",          label: "지표 가이드" },
+            { key: "usage",          label: "❓ 사용 가이드" },
           ] as const).map(({ key, label }) => (
             <button
               key={key}
@@ -154,6 +156,7 @@ export default function Page() {
         {activeTab === "recommendation" && <AIRecommendation />}
         {activeTab === "backtest" && <BacktestPanel />}
         {activeTab === "guide" && <IndicatorGuide />}
+        {activeTab === "usage" && <UsageGuide />}
         {activeTab === "detail" && (
           <>
             <StockSearch />

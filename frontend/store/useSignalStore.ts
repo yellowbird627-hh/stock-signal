@@ -5,7 +5,7 @@ import { persist } from "zustand/middleware"
 import { api } from "@/lib/api"
 import type { Market, PortfolioItem, SignalResult, StockConfig } from "@/types"
 
-type Tab = "portfolio" | "recommendation" | "detail" | "guide" | "backtest"
+type Tab = "portfolio" | "recommendation" | "detail" | "guide" | "backtest" | "usage"
 
 interface SignalStore {
   // 탭
