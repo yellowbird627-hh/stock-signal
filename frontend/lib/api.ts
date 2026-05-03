@@ -46,4 +46,9 @@ export const api = {
 
   getRecommendation: () =>
     apiFetch<Recommendation>("/api/recommendation"),
+
+  searchStocks: (q: string, market: string) =>
+    apiFetch<{ ticker: string; name: string; market: string }[]>(
+      `/api/stocks/search?q=${encodeURIComponent(q)}&market=${market}`
+    ),
 }

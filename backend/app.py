@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time as _time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from dotenv import load_dotenv
@@ -38,6 +39,27 @@ def _get_config_path() -> str:
     return _DEFAULT_CONFIG_PATH
 
 CONFIG_PATH = _get_config_path()
+
+# KRX 전체 종목 목록 캐시 (24시간 유지)
+_krx_listing: dict = {"data": None, "loaded_at": 0.0}
+
+
+def _load_krx_listing() -> list[dict]:
+    now = _time.time()
+    if _krx_listing["data"] is not None and now - _krx_listing["loaded_at"] < 86400:
+        return _krx_listing["data"]
+    import FinanceDataReader as fdr
+    df = fdr.StockListing("KRX")
+    result = []
+    for _, row in df.iterrows():
+        code = str(row.get("Code", row.get("Symbol", ""))).zfill(6)
+        name = str(row.get("Name", ""))
+        if code and name and name != "nan":
+            result.append({"ticker": code, "name": name, "market": "KRX"})
+    _krx_listing["data"] = result
+    _krx_listing["loaded_at"] = now
+    logger.info("KRX 종목 목록 캐시 갱신: %d 종목", len(result))
+    return result
 
 
 # ── 헬퍼 ─────────────────────────────────────────────────────────────────────
@@ -143,6 +165,27 @@ def health():
 @app.route("/api/stocks")
 def stocks():
     return jsonify(_load_stocks())
+
+
+@app.route("/api/stocks/search")
+def search_stocks():
+    q = request.args.get("q", "").strip()
+    market = request.args.get("market", "KRX").strip().upper()
+
+    if not q or market not in ("KRX", "US"):
+        return jsonify([])
+
+    try:
+        if market == "KRX":
+            listing = _load_krx_listing()
+            q_lower = q.lower()
+            matches = [s for s in listing if q_lower in s["name"].lower()]
+            return jsonify(matches[:10])
+    except Exception as e:
+        logger.error("search_stocks 오류: %s", e, exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify([])
 
 
 @app.route("/api/signal")
